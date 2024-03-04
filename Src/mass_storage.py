@@ -33,6 +33,33 @@ class MassStorageError(Exception):
         self.sense_code = sense_code
         self.sense_qualifier = sense_qualifier
 
+class DiskImage:
+
+    def __init__(self, block_size : int, capacity : int):
+        self.block_size = block_size
+        self.capacity = capacity
+
+    def read(self, offset_block : int, num_blocks : int) -> bytes:
+        raise NotImplemented()
+
+    def write(self, offset_block : int, data : bytes):
+        raise NotImplemented()
+    
+class FDDiskImage(DiskImage):
+
+    def __init__(self, path : str, block_size : int):
+        self.image = open(path, "rb+")
+        self.image_size = os.fstat(self.image.fileno()).st_size
+        super().__init__(block_size, self.image_size // block_size)
+
+    def read(self, offset_block : int, num_blocks : int) -> bytes:
+        self.image.seek(offset_block * self.block_size, os.SEEK_SET)
+        return self.image.read(num_blocks * self.block_size)
+
+    def write(self, offset_block : int, data : bytes):
+        self.image.seek(offset_block * self.block_size, os.SEEK_SET)
+        self.image.write(data)
+
 class MassStorage(FFSFunction):
 
     DESCRIPTORS = [
@@ -71,15 +98,11 @@ class MassStorage(FFSFunction):
     scsi_handlers : dict[SCSICmds, tuple[SCSICmd, typing.Callable[[type[SCSICmd]], bytes]]]
 
     def __init__(self, config : Configuration, 
-                 image_path : str,
-                 block_size : int = 512,
+                 image : DiskImage,
                  write_perms : WritePerms = WritePerms.ALLOW,
                  vendor_id : str = "", product_id : str = "", product_ver : str = ""):
         super().__init__(config, "mass0", hs_descs=MassStorage.DESCRIPTORS, strings=MassStorage.STRINGS)
-        self.image = open(image_path, "rb+")
-        self.block_size = block_size
-        self.image_size = os.fstat(self.image.fileno()).st_size
-        self.image_num_blocks = self.image_size // self.block_size
+        self.image = image
 
         self.write_perms = write_perms
 
@@ -306,26 +329,21 @@ class MassStorage(FFSFunction):
             raise MassStorageError("Image too large, need to implement read capacity 16")
         
         return ReadCapacityData(
-            returned_logical_block_address=self.image_num_blocks,
-            logical_block_length=self.block_size,
+            returned_logical_block_address=self.image.capacity,
+            logical_block_length=self.image.block_size,
         )
 
     def handle_read_cmd(self, cmd : Read10Cmd):
         self.info("Reading block address = %s num_blocks = %s", cmd.logical_block_address, cmd.transfer_length)
-
-        self.image.seek(cmd.logical_block_address * self.block_size, os.SEEK_SET)
-
-        # TODO... might need to chunk these reads...
-        return self.image.read(cmd.transfer_length * self.block_size)
+        return self.image.read(cmd.logical_block_address, cmd.transfer_length)
 
     async def handle_write_cmd(self, cmd : Write10Cmd):
         self.info("Writing to block address = %s, num_blocks = %s", cmd.logical_block_address, cmd.transfer_length)
 
-        data = await self.ep2_read(cmd.transfer_length * self.block_size)
+        data = await self.ep2_read(cmd.transfer_length * self.image.block_size)
 
         if self.write_perms == WritePerms.ALLOW:
-            self.image.seek(cmd.logical_block_address * self.block_size, os.SEEK_SET)
-            self.image.write(data)
+            self.image.write(cmd.logical_block_address, data)
         
         if self.write_perms == WritePerms.DENY:
             print("Here!")
@@ -338,7 +356,8 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("image", help="Path to the first disk image")
+    parser.add_argument("image", help="Path to disk image")
+    parser.add_argument("--write-image", help="Path to sperate image to store writes")
     parser.add_argument("--block-size", type=int, default=512)
     parser.add_argument("--write", type=WritePerms.__getitem__, default=WritePerms.ALLOW)
     args = parser.parse_args()
