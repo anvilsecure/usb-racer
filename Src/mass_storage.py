@@ -45,7 +45,7 @@ class DiskImage:
     def write(self, offset_block : int, data : bytes):
         raise NotImplemented()
     
-class FDDiskImage(DiskImage):
+class FileDiskImage(DiskImage):
 
     def __init__(self, path : str, block_size : int):
         self.image = open(path, "rb+")
@@ -325,7 +325,7 @@ class MassStorage(FFSFunction):
         if cmd.pmi != 0:
             raise MassStorageError("Do not know how to handle a read capacity with a PMI == 1")
         
-        if self.image_num_blocks >= 0xffff_ffff:
+        if self.image.capacity >= 0xffff_ffff:
             raise MassStorageError("Image too large, need to implement read capacity 16")
         
         return ReadCapacityData(
@@ -370,7 +370,7 @@ if __name__ == "__main__":
     gadget = Gadget(VENDOR_ID, PRODUCT_ID, manufacture="Anvil", product="Evil Mass Storage")
     config = gadget.add_configuration(Configuration(gadget, "Config-1"))
     func = config.add_function(MassStorage(config,
-                                           args.image, args.block_size,
+                                           FileDiskImage(args.image, args.block_size),
                                            write_perms=args.write,
                                            vendor_id="Anvil", product_id="Evil Mass", product_ver="0.1"))
     
