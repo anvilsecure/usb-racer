@@ -10,6 +10,7 @@ from gadget import Gadget, Configuration, FFSFunction, EPReader
 from disks import DiskImage
 from usb_ctypes import *
 from mass_storage_ctypes import *
+from log import IOLogger
 
 BULK_ONLY_TRANSPORT = 0x50
 
@@ -335,6 +336,8 @@ if __name__ == "__main__":
     parser.add_argument("--block-size", type=int, default=512)
     parser.add_argument("--write", type=WritePerms.__getitem__, default=WritePerms.ALLOW)
     parser.add_argument("--cow", help="Path to copy on write file (creates/expects a .metadata file next to it)")
+    parser.add_argument("--log", help="Log IO operations to file")
+    parser.add_argument("--log-data", action="store_true", default=False, help="Include data within the log file")
     args = parser.parse_args()
     
     logging.basicConfig(level=logging.DEBUG)
@@ -346,6 +349,8 @@ if __name__ == "__main__":
     else:
         disk = MMapDiskImage(args.image, args.block_size)
 
+    if args.log != None:
+        disk = IOLogger(args.log, args.log_data, disk)
     
     gadget = Gadget(VENDOR_ID, PRODUCT_ID, manufacture="Anvil", product="Evil Mass Storage")
     config = gadget.add_configuration(Configuration(gadget, "Config-1"))
