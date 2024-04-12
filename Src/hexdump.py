@@ -1,6 +1,7 @@
 def hexdump(data : bytes, offset : int = 0):
     print(HexDumper(data, offset))
 
+# grabbed from: https://gist.github.com/NeatMonster/c06c61ba4114a2b31418a364341c26c0#file-hexdump-py
 class HexDumper:
     def __init__(self, buf, off=0):
         self.buf = buf
