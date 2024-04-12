@@ -14,6 +14,9 @@ class DiskImage:
     @property
     def capacity_bytes(self):
         return self.capacity * self.block_size
+    
+    def bytes_to_block(self, byte_count):
+        return (byte_count + self.block_size - 1) // self.block_size
 
     def read(self, offset_block : int, num_blocks : int) -> bytes:
         raise NotImplemented()
@@ -102,7 +105,7 @@ class COWDiskImage(DiskImage):
     
     def write(self, offset_block: int, data: bytes):
         self.write_disk.write(offset_block, data)
-        self.metadata[offset_block:offset_block + ((len(data) + self.block_size - 1) // self.block_size)] = 1
+        self.metadata[offset_block:offset_block + self.bytes_to_block(len(data))] = 1
     
     def cleanup(self):
         self.read_disk.cleanup()
