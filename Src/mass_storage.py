@@ -7,6 +7,7 @@ import logging
 import os
 
 from gadget import Gadget, Configuration, FFSFunction, EPReader
+from disks import DiskImage
 from usb_ctypes import *
 from mass_storage_ctypes import *
 
@@ -32,33 +33,6 @@ class MassStorageError(Exception):
         self.sense_key = sense_key
         self.sense_code = sense_code
         self.sense_qualifier = sense_qualifier
-
-class DiskImage:
-
-    def __init__(self, block_size : int, capacity : int):
-        self.block_size = block_size
-        self.capacity = capacity
-
-    def read(self, offset_block : int, num_blocks : int) -> bytes:
-        raise NotImplemented()
-
-    def write(self, offset_block : int, data : bytes):
-        raise NotImplemented()
-    
-class FileDiskImage(DiskImage):
-
-    def __init__(self, path : str, block_size : int):
-        self.image = open(path, "rb+")
-        self.image_size = os.fstat(self.image.fileno()).st_size
-        super().__init__(block_size, self.image_size // block_size)
-
-    def read(self, offset_block : int, num_blocks : int) -> bytes:
-        self.image.seek(offset_block * self.block_size, os.SEEK_SET)
-        return self.image.read(num_blocks * self.block_size)
-
-    def write(self, offset_block : int, data : bytes):
-        self.image.seek(offset_block * self.block_size, os.SEEK_SET)
-        self.image.write(data)
 
 class MassStorage(FFSFunction):
 
@@ -354,23 +328,29 @@ class MassStorage(FFSFunction):
 if __name__ == "__main__":
     import logging
     import argparse
+    from disks import MMapDiskImage, COWDiskImage
 
     parser = argparse.ArgumentParser()
     parser.add_argument("image", help="Path to disk image")
-    parser.add_argument("--write-image", help="Path to sperate image to store writes")
     parser.add_argument("--block-size", type=int, default=512)
     parser.add_argument("--write", type=WritePerms.__getitem__, default=WritePerms.ALLOW)
+    parser.add_argument("--cow", help="Path to copy on write file (creates/expects a .metadata file next to it)")
     args = parser.parse_args()
     
     logging.basicConfig(level=logging.DEBUG)
     VENDOR_ID = 0x1234
     PRODUCT_ID = 0x4321
     
+    if args.cow != None:
+        disk = COWDiskImage(args.image, args.block_size, args.cow)
+    else:
+        disk = MMapDiskImage(args.image, args.block_size)
+
     
     gadget = Gadget(VENDOR_ID, PRODUCT_ID, manufacture="Anvil", product="Evil Mass Storage")
     config = gadget.add_configuration(Configuration(gadget, "Config-1"))
     func = config.add_function(MassStorage(config,
-                                           FileDiskImage(args.image, args.block_size),
+                                           disk,
                                            write_perms=args.write,
                                            vendor_id="Anvil", product_id="Evil Mass", product_ver="0.1"))
     
