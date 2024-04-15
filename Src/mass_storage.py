@@ -201,7 +201,9 @@ class MassStorage(FFSFunction):
         cbw = CBW.from_buffer_copy(data[:sizeof(CBW)])
         payload = data[sizeof(CBW):sizeof(CBW)+cbw.bCBWCBLength]
 
-        cbw.show()
+
+        if self.log_is_enabled(logging.DEBUG):
+            cbw.show()
 
         scsi_rsp = None
         status = CSWStatus.PASSED
