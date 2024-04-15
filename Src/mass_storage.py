@@ -338,9 +338,10 @@ if __name__ == "__main__":
     parser.add_argument("--cow", help="Path to copy on write file (creates/expects a .metadata file next to it)")
     parser.add_argument("--log", help="Log IO operations to file")
     parser.add_argument("--log-data", action="store_true", default=False, help="Include data within the log file")
+    parser.add_argument("--debug-level", default=logging.INFO)
     args = parser.parse_args()
     
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=args.debug_level)
     VENDOR_ID = 0x1234
     PRODUCT_ID = 0x4321
     
