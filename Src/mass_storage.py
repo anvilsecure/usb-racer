@@ -35,6 +35,9 @@ class MassStorageError(Exception):
         self.sense_code = sense_code
         self.sense_qualifier = sense_qualifier
 
+type ReadCallback = typing.Callable[[int, int], bytes | None]
+type WriteCallback = typing.Callable[[int, bytes]]
+
 class MassStorage(FFSFunction):
 
     DESCRIPTORS = [
@@ -102,7 +105,10 @@ class MassStorage(FFSFunction):
             SCSICmds.READ_10:(Read10Cmd, self.handle_read_cmd),
             SCSICmds.WRITE_10:(Write10Cmd, self.handle_write_cmd),
         }
-    
+
+        self.read_callbacks = list[ReadCallback]()
+        self.write_callbacks = list[WriteCallback]()
+
     def cleanup(self):
         self.handle_disable()
 
@@ -312,12 +318,19 @@ class MassStorage(FFSFunction):
 
     def handle_read_cmd(self, cmd : Read10Cmd):
         self.info("Reading block address = %s num_blocks = %s", cmd.logical_block_address, cmd.transfer_length)
+        for callback in self.read_callbacks:
+            data = callback(cmd.logical_block_address, cmd.transfer_length)
+            if data != None:
+                return data
         return self.image.read(cmd.logical_block_address, cmd.transfer_length)
 
     async def handle_write_cmd(self, cmd : Write10Cmd):
         self.info("Writing to block address = %s, num_blocks = %s", cmd.logical_block_address, cmd.transfer_length)
 
         data = await self.ep2_read(cmd.transfer_length * self.image.block_size)
+
+        for callback in self.write_callbacks:
+            callback(cmd.logical_block_address, data)
 
         if self.write_perms == WritePerms.ALLOW:
             self.image.write(cmd.logical_block_address, data)

@@ -14,6 +14,7 @@ parser.add_argument("image_a", help="Path to disk image")
 parser.add_argument("image_b", help="Path second disk image")
 parser.add_argument("--block-size", type=int, default=512)
 parser.add_argument("--toggle-delay", type=float, help="Automatically toggles the disks after a delay (in seconds)")
+parser.add_argument("--toggle-read-block", type=int, help="Toggle disks after a read on a specific block")
 parser.add_argument("--debug-level", default=logging.INFO)
 args = parser.parse_args()
 
@@ -46,12 +47,25 @@ def toggle_delay():
     print("Toggling disks after delay")
     disk_toctou.toggle_disks()
 
+def read_callback(offset : int, num_blocks : int):
+    blk = args.toggle_read_block
+    if blk >= offset and blk <= (offset + num_blocks):
+        def do_toggle():
+            print(f"Toggling disks after read on {blk}")
+            disk_toctou.toggle_disks()
+        # let the current handling complete before toggling disks
+        asyncio.get_running_loop().call_soon(do_toggle)
+        func.read_callbacks.remove(read_callback)
+
 async def main():
     keyboard_toggle = asyncio.create_task(toggle_disk_keyboard())
 
     if args.toggle_delay != None:
         print(f"Scheduling a toggle after {args.toggle_delay:.2f} seconds")
         asyncio.get_running_loop().call_later(args.toggle_delay, toggle_delay)
+    
+    if args.toggle_read_block != None:
+        func.read_callbacks.append(read_callback)
 
     await gadget.run()
 
