@@ -1,5 +1,7 @@
 import os
 import mmap
+import typing
+
 import bitarray
 
 class DiskError(Exception):
@@ -113,3 +115,76 @@ class COWDiskImage(DiskImage):
         self.metadata_map.flush()
         self.metadata_map.close()
         self.metadata_file.close()
+
+class TOCOTUDiskImage(DiskImage):
+
+    def __init__(self, disk_a : DiskImage, disk_b : DiskImage):
+        super().__init__(disk_a.block_size, disk_a.capacity)
+        self.disk_a = disk_a
+        self.disk_b = disk_b
+        self.active_disk = self.disk_a
+
+    def read(self, offset_block: int, num_blocks: int) -> bytes:
+        return self.active_disk.read(offset_block, num_blocks)
+    
+    def write(self, offset_block: int, data: bytes):
+        self.active_disk.write(offset_block, data)
+    
+    def cleanup(self):
+        self.disk_a.cleanup()
+        self.disk_b.cleanup()
+        return super().cleanup()
+    
+    def toggle_disks(self):
+        if self.active_disk == self.disk_a:
+            self.active_disk = self.disk_b
+        else:
+            self.active_disk = self.disk_a
+
+type OverrideKey = int | tuple[int, int]
+type ReadOverrideCallback = typing.Callable[[DiskImage, int, int], bytes] # (image, offset_in_blocks, count_in_blocks) -> bytes
+type WriteOverrideCallback = typing.Callable[[DiskImage, int, bytes]] # (image, offset_in_blocks, data_to_write) -> data_to_write
+
+class DiskOverrideImage(DiskImage):
+
+    def __init__(self, src : DiskImage,
+                 read_overrides : list[tuple[OverrideKey, ReadOverrideCallback]], 
+                 write_overides : list[tuple[OverrideKey, WriteOverrideCallback]]):
+        super().__init__(src.block_size, src.capacity)
+        self.src = src
+        self.read_overrides = read_overrides
+        self.write_overrides = write_overides
+
+    def read(self, offset_block: int, num_blocks: int) -> bytes:
+        datas = []
+        start_block = offset_block
+        end_block = offset_block + num_blocks - 1
+        for key, callback in self.read_overrides:
+            if isinstance(key, int):
+                if end_block < key:
+                    break
+                elif start_block <= key:
+                    if start_block < key:
+                        datas.append(self.src.read(start_block, key - start_block))
+                    datas.append(callback(self.src, key, 1))
+                    start_block = key + 1
+            else:
+                if end_block < key[0] or start_block > key[1]:
+                    break
+                elif start_block < key[0]:
+                    datas.append(self.src.read(start_block, key[0] - start_block))
+                    start_block = key[0]
+                override_end = end_block if end_block <= key[1] else key[1]
+                datas.append(callable(self.src, start_block, override_end - start_block + 1))
+                start_block = override_end + 1
+        
+        if start_block <= end_block:
+            datas.append(self.src.read(start_block, end_block - start_block + 1))
+
+        return b"".join(datas)
+    
+    def write(self, offset_block: int, data: bytes):
+        return self.src.write(offset_block, data)
+    
+    def cleanup(self):
+        self.src.cleanup()
