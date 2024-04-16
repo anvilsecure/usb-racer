@@ -154,8 +154,8 @@ type WriteOverrideCallback = typing.Callable[[DiskImage, int, bytes]] # (image, 
 class DiskOverrideImage(DiskImage):
 
     def __init__(self, src : DiskImage,
-                 read_overrides : list[tuple[OverrideKey, ReadOverrideCallback]], 
-                 write_overides : list[tuple[OverrideKey, WriteOverrideCallback]]):
+                 read_overrides : list[tuple[OverrideKey, ReadOverrideCallback]] = None, 
+                 write_overides : list[tuple[OverrideKey, WriteOverrideCallback]] = None):
         super().__init__(src.block_size, src.capacity)
         self.src = src
         self.read_overrides = read_overrides
