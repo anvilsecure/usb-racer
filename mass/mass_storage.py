@@ -307,11 +307,13 @@ class MassStorage(FFSFunction):
         if cmd.pmi != 0:
             raise MassStorageError("Do not know how to handle a read capacity with a PMI == 1")
         
-        if self.image.capacity >= 0xffff_ffff:
+        last_lba = self.image.capacity - 1 # LBAs start numbering at 0...
+
+        if last_lba >= 0xffff_ffff:
             raise MassStorageError("Image too large, need to implement read capacity 16")
         
         return ReadCapacityData(
-            returned_logical_block_address=self.image.capacity,
+            returned_logical_block_address=last_lba,
             logical_block_length=self.image.block_size,
         )
 
