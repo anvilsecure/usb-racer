@@ -61,6 +61,14 @@ class MemoryDiskImage(DiskImage):
     def __init__(self, block_size : int, capacity : int):
         self.image = mmap.mmap(-1, block_size * capacity)
         super().__init__(block_size, capacity)
+    
+    def read(self, offset_block : int, num_blocks : int) -> bytes:
+        self.image.seek(offset_block * self.block_size, os.SEEK_SET)
+        return self.image.read(num_blocks * self.block_size)
+
+    def write(self, offset_block : int, data : bytes):
+        self.image.seek(offset_block * self.block_size, os.SEEK_SET)
+        self.image.write(data)
 
 class MMapDiskImage(FileDiskImage):
 
