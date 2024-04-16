@@ -56,6 +56,12 @@ class FileDiskImage(DiskImage):
         self.image.close()
 
 
+class MemoryDiskImage(DiskImage):
+
+    def __init__(self, block_size : int, capacity : int):
+        self.image = mmap.mmap(-1, block_size * capacity)
+        super().__init__(block_size, capacity)
+
 class MMapDiskImage(FileDiskImage):
 
     def __init__(self, path : str, block_size : int, new_size : int = 0):
