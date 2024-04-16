@@ -41,8 +41,11 @@ class FileDiskImage(DiskImage):
             else:
                 raise
 
-        self.image_size = os.fstat(self.image.fileno()).st_size
-        super().__init__(block_size, self.image_size // block_size)
+        size = os.fstat(self.image.fileno()).st_size
+        if size % block_size != 0:
+            raise DiskError("File size is not a multiple of the block size")
+
+        super().__init__(block_size, size // block_size)
 
     def read(self, offset_block : int, num_blocks : int) -> bytes:
         self.image.seek(offset_block * self.block_size, os.SEEK_SET)
@@ -88,7 +91,7 @@ class COWDiskImage(DiskImage):
 
     def __init__(self, path : str, block_size : int, write_path : str):
         self.read_disk = MMapDiskImage(path, block_size)
-        self.write_disk = MMapDiskImage(write_path, block_size, new_size=self.read_disk.image_size)
+        self.write_disk = MMapDiskImage(write_path, block_size, new_size=self.read_disk.capacity_bytes)
         self.metadata_file = open(write_path + COWDiskImage.METADATA_EXT, "ab+")
         self.metadata_file.truncate((self.read_disk.capacity + 7) // 8)
         self.metadata_map = mmap.mmap(self.metadata_file.fileno(), 0)
