@@ -189,7 +189,7 @@ class DiskOverrideImage(DiskImage):
                     datas.append(self.src.read(start_block, key[0] - start_block))
                     start_block = key[0]
                 override_end = end_block if end_block <= key[1] else key[1]
-                datas.append(callable(self.src, start_block, override_end - start_block + 1))
+                datas.append(callback(self.src, start_block, override_end - start_block + 1))
                 start_block = override_end + 1
         
         if start_block <= end_block:
