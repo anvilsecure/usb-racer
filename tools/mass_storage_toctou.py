@@ -15,7 +15,7 @@ parser.add_argument("image_b", help="Path second disk image")
 parser.add_argument("--block-size", type=int, default=512)
 parser.add_argument("--toggle-delay", type=float, help="Automatically toggles the disks after a delay (in seconds)")
 parser.add_argument("--toggle-read-block", type=int, help="Toggle disks after a read on a specific block")
-parser.add_argument("--debug-level", default=logging.INFO)
+parser.add_argument("--debug-level", default=logging.WARNING)
 args = parser.parse_args()
 
 logging.basicConfig(level=args.debug_level)

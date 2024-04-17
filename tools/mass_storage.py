@@ -15,7 +15,7 @@ parser.add_argument("--write", type=WritePerms.__getitem__, default=WritePerms.A
 parser.add_argument("--cow", help="Path to copy on write file (creates/expects a .metadata file next to it)")
 parser.add_argument("--log", help="Log IO operations to file")
 parser.add_argument("--log-data", action="store_true", default=False, help="Include data within the log file")
-parser.add_argument("--debug-level", default=logging.INFO)
+parser.add_argument("--debug-level", default=logging.WARNING)
 args = parser.parse_args()
 
 logging.basicConfig(level=args.debug_level)
