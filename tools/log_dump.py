@@ -2,8 +2,8 @@
 
 import argparse
 
-from .hexdump import hexdump
-from .log import IOLogReader
+from mass.hexdump import hexdump
+from mass.log import IOLogReader
 
 parser = argparse.ArgumentParser()
 parser.add_argument("path", help="Path to the log file")
