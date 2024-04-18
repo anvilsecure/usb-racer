@@ -3,13 +3,13 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "mass"
+name = "usbracer"
 version = "0.0.1"
 dependencies = [
     "bitarray"
 ]
 
 [project.scripts]
-mass-log-dump = "mass.tools.log_dump:main"
-mass-storage = "mass.tools.mass_storage:main"
-mass-storage-toctou = "mass.tools.mass_storage_toctou:main"
+usbracer-log-dump = "usbracer.tools.log_dump:main"
+usbracer-storage = "usbracer.tools.mass_storage:main"
+usbracer-storage-toctou = "usbracer.tools.mass_storage_toctou:main"

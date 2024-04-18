@@ -3,8 +3,8 @@
 def main():
     import argparse
 
-    from mass.hexdump import hexdump
-    from mass.log import IOLogReader
+    from usbracer.hexdump import hexdump
+    from usbracer.log import IOLogReader
 
     parser = argparse.ArgumentParser()
     parser.add_argument("path", help="Path to the log file")

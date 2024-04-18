@@ -5,10 +5,10 @@ def main():
     import argparse
     import asyncio
 
-    from mass.gadget import Gadget, Configuration
-    from mass.mass_storage import MassStorage, WritePerms
-    from mass.disks import MMapDiskImage, COWDiskImage
-    from mass.log import IOLogger
+    from usbracer.gadget import Gadget, Configuration
+    from usbracer.mass_storage import MassStorage, WritePerms
+    from usbracer.disks import MMapDiskImage, COWDiskImage
+    from usbracer.log import IOLogger
 
     parser = argparse.ArgumentParser()
     parser.add_argument("image", help="Path to disk image")

@@ -31,10 +31,10 @@ pip install .
 
 ## Basic Mass Storage Device
 
-The `mass-storage` implements a basic mass storage device backed by a disk image, with some fun options.
+The `usbracer-storage` implements a basic mass storage device backed by a disk image, with some fun options.
 
 ```
-usage: mass-storage [-h] [--block-size BLOCK_SIZE] [--write WRITE] [--cow COW] [--log LOG] [--log-data] [--debug-level DEBUG_LEVEL] image
+usage: usbracer-storage [-h] [--block-size BLOCK_SIZE] [--write WRITE] [--cow COW] [--log LOG] [--log-data] [--debug-level DEBUG_LEVEL] image
 
 positional arguments:
   image                 Path to disk image
@@ -49,10 +49,10 @@ options:
   --debug-level DEBUG_LEVEL
 ```
 
-Running `mass-storage` with just a path to a disk image and block size will present a basic mass storage device to the host. It is pretty slow, so you are better off using the standard mass storage gadget than this if all you want is a mass storage device. The fun is with the options!
+Running `usbracer-storage` with just a path to a disk image and block size will present a basic mass storage device to the host. It is pretty slow, so you are better off using the standard mass storage gadget than this if all you want is a mass storage device. The fun is with the options!
 
 ```
-> mass_storage.py --block-size 512 /path/to/disk.img
+> usbracer-storage --block-size 512 /path/to/disk.img
 ```
 
 ### Write Protect/Drops
@@ -69,10 +69,10 @@ A primitive `--cow /path/to/cow-location` option exists where another image, the
 
 ### Logging
 
-The `--log /path/to/log-file` can be used to log any read/writes to disk. This is a binary log and the `mass-log-dump` can be used to display the operations. Adding a `--log-data` option will include the data from the reads and the writes within the log, otherwise only the operation, offset, and block counts are retained.
+The `--log /path/to/log-file` can be used to log any read/writes to disk. This is a binary log and the `usbracer-log-dump` can be used to display the operations. Adding a `--log-data` option will include the data from the reads and the writes within the log, otherwise only the operation, offset, and block counts are retained.
 
 ```
-> mass-log-dump ~/disk.log 
+> usbracer-log-dump ~/disk.log 
 Block Size=512, Capacity=20481, Flags=INCLUDES_DATA
 Op: READ Offset: 0 Count: 1
 00000000  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
@@ -104,10 +104,10 @@ Op: READ Offset: 2 Count: 32
 
 ## TOCTOU Tool
 
-The `mass-storage-toctou` script can be used to exploit Time of Check/Time of Use style issues. It is launched with two images and can switch between the two while running.
+The `usbracer-storage-toctou` script can be used to exploit Time of Check/Time of Use style issues. It is launched with two images and can switch between the two while running.
 
 ```
-usage: mass_storage_toctou.py [-h] [--block-size BLOCK_SIZE] [--toggle-delay TOGGLE_DELAY] [--toggle-read-block TOGGLE_READ_BLOCK] [--debug-level DEBUG_LEVEL]
+usage: usbracer-storage-toctou [-h] [--block-size BLOCK_SIZE] [--toggle-delay TOGGLE_DELAY] [--toggle-read-block TOGGLE_READ_BLOCK] [--debug-level DEBUG_LEVEL]
                               image_a image_b
 
 positional arguments:
@@ -127,7 +127,7 @@ options:
 By default the tool waits for the user to hit the return key to toggle disks:
 
 ```
-mass_storage_toctou.py ~milvich/disk_a.img ~milvich/disk_b.img
+usbracer-storage-toctou ~milvich/disk_a.img ~milvich/disk_b.img
 Hit the enter key to toggle disks!
 
 Toggling disk images!
@@ -160,7 +160,7 @@ We used the `--toggle-read-block` option on the last block of the root disk imag
 
 A constant nemesis in performing these style of attacks is disk caching. Your OS is going to cache disk reads, especially small files. Swapping the backing image isn't going to do anything if your target never reads from the drive again. You will have to come up with strategy to handle disk caching.
 
-Sometimes it doesn't matter, in the above example if you have a multi gigabyte root file system and your target only has 256 MB of RAM, it isn't going to cache the whole image and the swap is fairly straight forward.
+Sometimes it doesn't matter, in the above example if you have a multi gigabyte root file system and your target only has 512 MB of RAM, it isn't going to cache the whole image and the swap is fairly straight forward.
 
 Other times you will need to become more creative. For example, if your target has a webpage for firmware updates, upload large files and exercise disk IO. If your actual target block isn't accessed too frequently it may get evicted out the disk cache. Pretty much just exercises the target and force it to consume resources to evict entries out of the cache.
 
@@ -208,3 +208,7 @@ func = config.add_function(MassStorage(
 ```python
 asyncio.run(gadget.run())
 ```
+
+### Other types of USB Devices
+
+Have other USB devices you want to spoof/emulate? The `usbracer.gadget.FFSFunction` class can be subclassed to implement other USB devices. Just swap out the `MassStorage` object in step #3. Take a look at the `MassStorage` class to see how to setup the descriptors and open the EP devices.

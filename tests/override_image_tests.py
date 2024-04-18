@@ -1,6 +1,6 @@
 import unittest
 
-from mass.disks import DiskOverrideImage, MemoryDiskImage, DiskImage
+from usbracer.disks import DiskOverrideImage, MemoryDiskImage, DiskImage
 
 # the following only work for disks with 255 or less blocks
 

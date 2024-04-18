@@ -4,10 +4,10 @@ import argparse
 import asyncio
 import random
 
-from mass.gadget import Gadget, Configuration
-from mass.mass_storage import MassStorage, WritePerms
-from mass.disks import MMapDiskImage, DiskOverrideImage, DiskImage
-from mass.log import IOLogger
+from usbracer.gadget import Gadget, Configuration
+from usbracer.mass_storage import MassStorage, WritePerms
+from usbracer.disks import MMapDiskImage, DiskOverrideImage, DiskImage
+from usbracer.log import IOLogger
 
 VENDOR_ID = 0x1234
 PRODUCT_ID = 0x4321
