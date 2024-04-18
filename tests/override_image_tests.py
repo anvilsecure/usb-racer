@@ -1,6 +1,7 @@
 import unittest
+import io
 
-from usbracer.disks import DiskOverrideImage, MemoryDiskImage, DiskImage
+from usbracer.disks import DiskOverrideImage, MemoryDiskImage, DiskImage, FileReadOverride
 
 # the following only work for disks with 255 or less blocks
 
@@ -93,6 +94,21 @@ class TestDiskOverrideImage(unittest.TestCase):
         self.assertEqual(expand(disk, b"\x03\x00\x05\x05\x05\x00"), disk.read(3, 6))
 
         self.assertEqual(expand(disk, b"\x00\x03\x00\x05\x05\x05\x00"), disk.read(2,7))
+    
+    def test_filereaderoverride(self):
+        mem_disk = MemoryDiskImage(512, 20)
+        override = FileReadOverride(io.BytesIO(b"A"*1026), 512, 3)
+        
+        disk = DiskOverrideImage(mem_disk, read_overrides = [
+            (override.override_key, override)
+        ])
+
+        self.assertEqual(b"A"*512, disk.read(3, 1))
+        self.assertEqual(b"A"*512, disk.read(4, 1))
+        self.assertEqual(b"A"*1024, disk.read(3, 2))
+        self.assertEqual(b"AA" + b"\x00" * 510, disk.read(5, 1))
+        self.assertEqual(expand(disk, b"\x00AA") + b"AA" + b"\x00" * 510, disk.read(2,4))
+
 
 
 if __name__ == "__main__":

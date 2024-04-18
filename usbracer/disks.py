@@ -1,11 +1,24 @@
 import os
 import mmap
 import typing
+import io
 
 import bitarray
 
 class DiskError(Exception):
     pass
+
+def get_file_like_size(obj : typing.Any):
+    if isinstance(obj, io.BytesIO):
+        return len(obj.getvalue())
+    elif hasattr(obj, "seek") and hasattr(obj, "tell"):
+        prev = obj.tell()
+        obj.seek(0, os.SEEK_END)
+        size = obj.tell()
+        obj.seek(prev)
+        return size
+    else:
+        raise ValueError("Unable to calculate file size")
 
 class DiskImage:
 
@@ -41,7 +54,7 @@ class FileDiskImage(DiskImage):
             else:
                 raise
 
-        size = os.fstat(self.image.fileno()).st_size
+        size = get_file_like_size(self.image)
         if size % block_size != 0:
             raise DiskError("File size is not a multiple of the block size")
 
@@ -169,8 +182,8 @@ class DiskOverrideImage(DiskImage):
                  write_overides : list[tuple[OverrideKey, WriteOverrideCallback]] = None):
         super().__init__(src.block_size, src.capacity)
         self.src = src
-        self.read_overrides = read_overrides
-        self.write_overrides = write_overides
+        self.read_overrides = read_overrides if read_overrides != None else []
+        self.write_overrides = write_overides if write_overides != None else []
 
     def read(self, offset_block: int, num_blocks: int) -> bytes:
         datas = []
@@ -205,3 +218,30 @@ class DiskOverrideImage(DiskImage):
     
     def cleanup(self):
         self.src.cleanup()
+
+class FileReadOverride:
+
+    def __init__(self, file : str | io.RawIOBase, block_size : int, offset : int):
+        self.block_size = block_size
+        self.starting_offset = offset
+        if isinstance(file, str):
+            file = open(file, "rb")
+        self.file = file
+        size = get_file_like_size(self.file)
+        self.num_blocks = (size + block_size - 1) // block_size
+
+    @property
+    def override_key(self):
+        return (self.starting_offset, self.starting_offset + self.num_blocks - 1)
+    
+    def __call__(self, disk : DiskImage, offset : int, num_blocks : int) -> bytes:
+        self.file.seek((offset - self.starting_offset) * self.block_size)
+        data = self.file.read(num_blocks * self.block_size)
+
+        # we are allowing non-block aligned files... pad with zeros if we need to
+        remaining = (num_blocks * self.block_size) - len(data)
+        if remaining > 0:
+            data += b"\x00" * remaining
+
+        return data
+
