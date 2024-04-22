@@ -39,7 +39,10 @@ def main():
                                             write_perms=args.write,
                                             vendor_id="Anvil", product_id="Evil Mass", product_ver="0.1"))
 
-    asyncio.run(gadget.run())
+    try:
+        asyncio.run(gadget.run())
+    except KeyboardInterrupt:
+        pass
 
 
 if __name__ == "__main__":
