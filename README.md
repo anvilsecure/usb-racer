@@ -171,7 +171,7 @@ For testing purposes you can force purging of disk caches:
 
 ## Scripts
 
-To be successful you may need to script up an attack. Take a look at the examples and the pre-built tools. There are five steps to setup the device:
+To be successful you may need to script up an attack. Take a look at the [example](/examples) and the pre-built [tools](/usbracer/tools). There are five steps to setup the device:
 
 1. Create a `Gadget` and specify the vendor/product ids, and some description strings:
 
