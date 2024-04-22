@@ -12,4 +12,4 @@ dependencies = [
 [project.scripts]
 usbracer-log-dump = "usbracer.tools.log_dump:main"
 usbracer-storage = "usbracer.tools.mass_storage:main"
-usbracer-storage-toctou = "usbracer.tools.mass_storage_toctou:main"
+usbracer = "usbracer.tools.mass_storage_toctou:main"

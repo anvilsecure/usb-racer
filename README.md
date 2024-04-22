@@ -104,10 +104,10 @@ Op: READ Offset: 2 Count: 32
 
 ## TOCTOU Tool
 
-The `usbracer-storage-toctou` script can be used to exploit Time of Check/Time of Use style issues. It is launched with two images and can switch between the two while running.
+The `usbracer` script can be used to exploit Time of Check/Time of Use style issues. It is launched with two images and can switch between the two while running.
 
 ```
-usage: usbracer-storage-toctou [-h] (--toggle-image TOGGLE_IMAGE | --offset-override OFFSET_OVERRIDE OFFSET_OVERRIDE) [--block-size BLOCK_SIZE]
+usage: usbracer [-h] (--toggle-image TOGGLE_IMAGE | --offset-override OFFSET_OVERRIDE OFFSET_OVERRIDE) [--block-size BLOCK_SIZE]
                                [--toggle-delay TOGGLE_DELAY] [--toggle-read-block TOGGLE_READ_BLOCK] [--debug-level DEBUG_LEVEL]
                                disk
 
@@ -171,7 +171,7 @@ For testing purposes you can force purging of disk caches:
 
 ## Scripts
 
-To be successful you may need to script up an attack. Take a look at the [example](/examples) and the pre-built [tools](/usbracer/tools). There are five steps to setup the device:
+To be successful you may need to script up an attack. Take a look at the [examples](/examples) and the pre-built [tools](/usbracer/tools). There are five steps to setup the device:
 
 1. Create a `Gadget` and specify the vendor/product ids, and some description strings:
 
