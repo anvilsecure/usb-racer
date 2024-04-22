@@ -23,7 +23,7 @@ git clone XYZ
 2. Install with pip:
 
 ```shell
-cd usb-toctou
+cd usb-racer
 pip install .
 ```
 
@@ -31,7 +31,7 @@ pip install .
 
 ## Basic Mass Storage Device
 
-The `usbracer-storage` implements a basic mass storage device backed by a disk image, with some fun options.
+The `usbracer-storage` implements a basic mass storage device backed by a disk image, with some options.
 
 ```
 usage: usbracer-storage [-h] [--block-size BLOCK_SIZE] [--write WRITE] [--cow COW] [--log LOG] [--log-data] [--debug-level DEBUG_LEVEL] image
@@ -65,7 +65,7 @@ The `--write` option lets you control if writes are allowed and has the followin
 
 ### Copy on Write (COW)
 
-A primitive `--cow /path/to/cow-location` option exists where another image, the same size as the original is created (if it doesn't exist, otherwise the existing image is used), and writes are directed to the new image. A simple bitmap is used to keep track of which blocks are in the COW image and which ones are still in the original image. Any reads will source from the COW image first.
+A primitive `--cow /path/to/cow-location` option exists where another image, the same size as the original, is used to store writes. A simple bitmap is used to keep track of which blocks are in the COW image and which ones are still in the original image. Any reads will source from the COW image first.
 
 ### Logging
 
@@ -107,12 +107,12 @@ Op: READ Offset: 2 Count: 32
 The `usbracer-storage-toctou` script can be used to exploit Time of Check/Time of Use style issues. It is launched with two images and can switch between the two while running.
 
 ```
-usage: usbracer-storage-toctou [-h] [--block-size BLOCK_SIZE] [--toggle-delay TOGGLE_DELAY] [--toggle-read-block TOGGLE_READ_BLOCK] [--debug-level DEBUG_LEVEL]
-                              image_a image_b
+usage: usbracer-storage-toctou [-h] (--toggle-image TOGGLE_IMAGE | --offset-override OFFSET_OVERRIDE OFFSET_OVERRIDE) [--block-size BLOCK_SIZE]
+                               [--toggle-delay TOGGLE_DELAY] [--toggle-read-block TOGGLE_READ_BLOCK] [--debug-level DEBUG_LEVEL]
+                               disk
 
 positional arguments:
-  image_a               Path to disk image
-  image_b               Path second disk image
+  disk                  Path to disk image
 
 options:
   -h, --help            show this help message and exit
@@ -122,19 +122,12 @@ options:
   --toggle-read-block TOGGLE_READ_BLOCK
                         Toggle disks after a read on a specific block
   --debug-level DEBUG_LEVEL
-```
 
-By default the tool waits for the user to hit the return key to toggle disks:
-
-```
-usbracer-storage-toctou ~milvich/disk_a.img ~milvich/disk_b.img
-Hit the enter key to toggle disks!
-
-Toggling disk images!
-
-Toggling disk images!
-
-Toggling disk images!
+Second Image:
+  --toggle-image TOGGLE_IMAGE
+                        A full image to toggle between
+  --offset-override OFFSET_OVERRIDE OFFSET_OVERRIDE
+                        The next two arguments are used as an offset and a path, can be specified multipule times
 ```
 
 We built this tool because we had a device that would *secure* boot from a USB drive and then did something like this:
@@ -154,7 +147,13 @@ mount ${ROOT_IMG} /new_root
 #...
 ```
 
-We used the `--toggle-read-block` option on the last block of the root disk image and swapped the image right after the verification step and before the mount! (Yes, you should be using [dm-verity](https://docs.kernel.org/admin-guide/device-mapper/verity.html))
+We used the `--toggle-read-block` option on the last block of the root disk image and swapped the image right after the verification step and before the mount! (Yes, you should be using [dm-verity](https://docs.kernel.org/admin-guide/device-mapper/verity.html)).
+
+The `--toggle-image` and `--offset-override` are used to specify the alternative data. With the `--toggle-image` option the entire disk is swapped. This is basic and simple. The original disk would contain the untouched and valid data, the second disk can contain anything you want. Simple but can result in more disk corruption as writes can be redirected and any updates to the disk before the toggle will be lost.
+
+The `--offset-override` option consumes two arguments, an offset and then a path to a file (`--offset-override 425 ~/malicious_data.bin`. The file will override the data at that offset. This allows you to more selectively target a file within the disk without having to swap the whole disk. This allows the system to write normally with persistent writes and is more reliable and less susceptible to disk corruption. The argument can be specified multiple times to override multiple locations with new data. Only reads are overridden, any writes are made to the original disk.
+
+More sophisticated scenarios are possible and can be [scripted](#scripts) up. 
 
 ### Disk Caching
 
