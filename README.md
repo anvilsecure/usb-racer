@@ -17,7 +17,7 @@ dtoverlay=dwc2
 1. Clone from Github:
 
 ```shell
-git clone XYZ
+git clone https://github.com/anvilsecure/usb-racer.git
 ```
 
 2. Install with pip:
