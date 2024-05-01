@@ -33,10 +33,7 @@ class MassStorageError(Exception):
         self.sense_key = sense_key
         self.sense_code = sense_code
         self.sense_qualifier = sense_qualifier
-
-type ReadCallback = typing.Callable[[int, int], bytes | None]
-type WriteCallback = typing.Callable[[int, bytes]]
-
+        
 class MassStorage(FFSFunction):
 
     DESCRIPTORS = [
@@ -105,8 +102,8 @@ class MassStorage(FFSFunction):
             SCSICmds.WRITE_10:(Write10Cmd, self.handle_write_cmd),
         }
 
-        self.read_callbacks = list[ReadCallback]()
-        self.write_callbacks = list[WriteCallback]()
+        self.read_callbacks = list[typing.Callable[[int, int], bytes | None]]()
+        self.write_callbacks = list[typing.Callable[[int, bytes]]]()
 
     def cleanup(self):
         self.handle_disable()

@@ -171,15 +171,11 @@ class TOCOTUDiskImage(DiskImage):
         else:
             self.active_disk = self.disk_a
 
-type OverrideKey = int | tuple[int, int]
-type ReadOverrideCallback = typing.Callable[[DiskImage, int, int], bytes] # (image, offset_in_blocks, count_in_blocks) -> bytes
-type WriteOverrideCallback = typing.Callable[[DiskImage, int, bytes]] # (image, offset_in_blocks, data_to_write) -> data_to_write
-
 class DiskOverrideImage(DiskImage):
 
     def __init__(self, src : DiskImage,
-                 read_overrides : list[tuple[OverrideKey, ReadOverrideCallback]] = None, 
-                 write_overides : list[tuple[OverrideKey, WriteOverrideCallback]] = None):
+                 read_overrides : list[tuple[int | tuple[int, int], typing.Callable[[DiskImage, int, int], bytes]]] = None, 
+                 write_overides : list[tuple[int | tuple[int, int], typing.Callable[[DiskImage, int, bytes]]]] = None):
         super().__init__(src.block_size, src.capacity)
         self.src = src
         self.read_overrides = read_overrides if read_overrides != None else []
