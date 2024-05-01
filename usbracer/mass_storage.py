@@ -103,7 +103,7 @@ class MassStorage(FFSFunction):
         }
 
         self.read_callbacks = list[typing.Callable[[int, int], bytes | None]]()
-        self.write_callbacks = list[typing.Callable[[int, bytes]]]()
+        self.write_callbacks = list[typing.Callable[[int, bytes], None]]()
 
     def cleanup(self):
         self.handle_disable()

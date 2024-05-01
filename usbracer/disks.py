@@ -175,7 +175,7 @@ class DiskOverrideImage(DiskImage):
 
     def __init__(self, src : DiskImage,
                  read_overrides : list[tuple[int | tuple[int, int], typing.Callable[[DiskImage, int, int], bytes]]] = None, 
-                 write_overides : list[tuple[int | tuple[int, int], typing.Callable[[DiskImage, int, bytes]]]] = None):
+                 write_overides : list[tuple[int | tuple[int, int], typing.Callable[[DiskImage, int, bytes], None]]] = None):
         super().__init__(src.block_size, src.capacity)
         self.src = src
         self.read_overrides = read_overrides if read_overrides != None else []
