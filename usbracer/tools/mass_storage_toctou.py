@@ -17,7 +17,7 @@ def main():
     group = group.add_mutually_exclusive_group(required=True)
     group.add_argument("--toggle-image", help="A full image to toggle between")
     group.add_argument("--offset-override", action="append", nargs=2,
-        help="The next two arguments are used as an offset and a path, can be specified multipule times")
+        help="The next two arguments are used as an offset and a path, can be specified multiple times")
 
     parser.add_argument("--block-size", type=int, default=512)
     parser.add_argument("--toggle-delay", type=float, help="Automatically toggles the disks after a delay (in seconds)")

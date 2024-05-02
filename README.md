@@ -127,7 +127,7 @@ Second Image:
   --toggle-image TOGGLE_IMAGE
                         A full image to toggle between
   --offset-override OFFSET_OVERRIDE OFFSET_OVERRIDE
-                        The next two arguments are used as an offset and a path, can be specified multipule times
+                        The next two arguments are used as an offset and a path, can be specified multiple times
 ```
 
 We built this tool because we had a device that would *secure* boot from a USB drive and then did something like this:
