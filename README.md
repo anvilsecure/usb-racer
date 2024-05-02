@@ -149,11 +149,18 @@ mount ${ROOT_IMG} /new_root
 
 We used the `--toggle-read-block` option on the last block of the root disk image and swapped the image right after the verification step and before the mount! (Yes, you should be using [dm-verity](https://docs.kernel.org/admin-guide/device-mapper/verity.html)).
 
-The `--toggle-image` and `--offset-override` are used to specify the alternative data. With the `--toggle-image` option the entire disk is swapped. This is basic and simple. The original disk would contain the untouched and valid data, the second disk can contain anything you want. Simple but can result in more disk corruption as writes can be redirected and any updates to the disk before the toggle will be lost.
+There are a couple ways to specify the second/replacement image:
 
-The `--offset-override` option consumes two arguments, an offset and then a path to a file (`--offset-override 425 ~/malicious_data.bin`. The file will override the data at that offset. This allows you to more selectively target a file within the disk without having to swap the whole disk. This allows the system to write normally with persistent writes and is more reliable and less susceptible to disk corruption. The argument can be specified multiple times to override multiple locations with new data. Only reads are overridden, any writes are made to the original disk.
+* `--toggle-image` – Takes a path to a file the same size as `disk` and serves as the second image. When the toggle action happens all reads and writes get redirected to the second file. This is simple, easy to modify several files and directory structures, but can result in disk corruption. The OS typically has already cached a bunch of data, including metadata about the directory structure, which may cause issues.
+* `--offset-override` – This takes two arguments an offset to replace the data with the contents of a file (e.g.`--offset-override 425 ~/malicious.bin`). When compared to swapping the whole image, this method uses less disk space and risk of corruption is much smaller as reads and writes outside of the targeted blocks are unaffected. Takes a little more work to setup as you need to know the blocks in the file you are targeting, and if the file is fragmented you may need to patch up multiple offsets. Also, it is not easy to change the directory structure. The `--offset-override` argument can be specified multiple times to target multiple files or a fragmented file.
 
-More sophisticated scenarios are possible and can be [scripted](#scripts) up. 
+When to trigger the attack can also be controlled. The tool offers three ways:
+
+* `Keyboard Toggle` – Hitting enter will toggle (enable/disable) the TOCTOU attack. This option is always on, even if one of the other options is picked.
+* `--toggle-delay` – This option will automatically toggle after the specified seconds.
+* `--toggle-read-block` – This option watches read operations and will toggle after reading the specified block. In terms of a TOCTOU, we would watch the last block in the targeted file. After the "check" operation reads it, we swap the underlying  data for the usage operation.
+
+More sophisticated scenarios are possible and can be [scripted](#scripts). 
 
 ### Disk Caching
 
@@ -161,7 +168,11 @@ A constant nemesis in performing these style of attacks is disk caching. Your OS
 
 Sometimes it doesn't matter, in the above example if you have a multi gigabyte root file system and your target only has 512 MB of RAM, it isn't going to cache the whole image and the swap is fairly straight forward.
 
-Other times you will need to become more creative. For example, if your target has a webpage for firmware updates, upload large files and exercise disk IO. If your actual target block isn't accessed too frequently it may get evicted out the disk cache. Pretty much just exercises the target and force it to consume resources to evict entries out of the cache.
+Other times you will need to become more creative. Here are some tips:
+
+* **Target Larger Files –** Processing large amounts of data will cause cache entries to be evicted. For example, a disk image of a root filesystem is unlikely to be fully cached during the signature verification step, while a configuration file a few hundred bytes long is easily cached.
+* **Target Less Frequently Used Files –** If the time between accesses is large then it gives the cache a chance to clear. For example, if a file is verified on boot but then not consumed until much later, the rest of the boot process or normal operations could have evicted the file from the cache.
+* **Force Resource Consumption –** Is there a web server? Firmware update? Network protocol that can be leveraged to allocate memory? Basically, we want to put a resource load on the device. The more memory we can tie up the less will be available for caching. The more IO we can force the faster the cache will turn over.
 
 For testing purposes you can force purging of disk caches:
 
@@ -171,7 +182,7 @@ For testing purposes you can force purging of disk caches:
 
 ## Scripts
 
-To be successful you may need to script up an attack. Take a look at the [examples](/examples) and the pre-built [tools](/usbracer/tools). There are five steps to setup the device:
+To be successful you may need to script an attack. Take a look at the [examples](/examples) and the pre-built [tools](/usbracer/tools). There are five steps to setup the device:
 
 1. Create a `Gadget` and specify the vendor/product ids, and some description strings:
 
